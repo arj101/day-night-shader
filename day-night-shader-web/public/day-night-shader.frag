@@ -12,7 +12,7 @@ precision mediump float;
 
 // uniform float u_time;
 uniform vec2 u_resolution;
-uniform vec2 u_mouse;
+// uniform vec2 u_mouse;
 
 uniform float u_lat;
 uniform float u_lon;
@@ -51,23 +51,13 @@ void main() {
 
     vec2 texCoord = vec2(gl_FragCoord.x, gl_FragCoord.y - (u_resolution.y - size.y) * 0.5)/size.xy;
 
-    // if (distance(u_mouse, gl_FragCoord.xy) <= 100.) {
-    //     float theta =  0.01;
-    //     texCoord *= 0.05;
-    //     texCoord -= u_mouse.xy/u_resolution.xy * 0.5;
-    //     texCoord = mat2(cos(theta), -sin(theta), sin(theta), cos(theta)) * texCoord;
-    //     texCoord *= 1./0.05;
-
-    //     texCoord += u_mouse.xy/u_resolution.xy * 0.5;
-    // }
-
     vec4 mapColorDay = texture2D(u_map_day, texCoord);
     vec4 mapColorNight = texture2D(u_map_night, texCoord);
 
 
     // vec2 sunLngLat = vec2(u_time * 30.0 * PI / 180.0,sin(u_time * 0.5) * 45.0 *  PI / 180.0);
-    vec2 sunLngLat = reverseEquirectangular(u_mouse.xy);
-    // vec2 sunLngLat = vec2(u_lon, u_lat);
+    // vec2 sunLngLat = reverseEquirectangular(u_mouse.xy);
+    vec2 sunLngLat = vec2(u_lon, u_lat);
     vec2 currLngLat = reverseEquirectangular(gl_FragCoord.xy);
 
 
