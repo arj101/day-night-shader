@@ -35,7 +35,7 @@ vec4 drawLine(vec4 inColor, float angle, float lineAngle, float angularWidth) {
 
 void main() {
     vec2 fragCoordYFlip = gl_FragCoord.xy;
-    fragCoordYFlip.y = u_resolution.y - fragCoordYFlip.y;
+    // fragCoordYFlip.y = u_resolution.y - fragCoordYFlip.y;
 
     vec2 texCoord = fragCoordYFlip/u_resolution;
     vec4 mapColorDay = texture2D(u_map_day, texCoord);

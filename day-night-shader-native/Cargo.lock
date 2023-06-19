@@ -224,6 +224,7 @@ dependencies = [
  "clap",
  "httparse",
  "image",
+ "png",
  "sfml",
  "url",
 ]

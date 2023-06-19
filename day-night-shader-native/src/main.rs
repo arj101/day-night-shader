@@ -15,7 +15,6 @@ use url::Url;
 
 use clap::Parser;
 
-
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -26,6 +25,21 @@ struct Args {
     ///temporary file used to save the rendered image
     #[arg(short, long, default_value_t = String::from("/tmp/__day_night_shader_rendered__.png"))]
     tmp_file: String,
+
+    #[arg(short, long, default_value_t = 1400)]
+    width: u32,
+}
+
+macro_rules! deref_mut {
+    ($ptr:expr) => {
+        unsafe { &mut *$ptr }
+    };
+}
+
+macro_rules! deref {
+    ($ptr:expr) => {
+        unsafe { &*$ptr }
+    };
 }
 
 fn main() -> std::io::Result<()> {
@@ -36,17 +50,33 @@ fn main() -> std::io::Result<()> {
     let earth_night = Texture::from_file("./earth_night.png").unwrap();
 
     println!("Loading shaders...");
-    let mut shader =
-        Shader::from_file_vert_frag("./vertex.vert", "./day-night-shader.frag").unwrap();
+    let mut shader = &mut Shader::from_file_vert_frag("./vertex.vert", "./day-night-shader.frag")
+        .unwrap() as *mut Shader;
 
     println!("Done!");
 
     let addr = args.addr;
     let listener = TcpListener::bind(addr)?;
 
+    let width = args.width;
+    let height = args.width / 2;
+    let mut render_texture = RenderTexture::new(width, height).unwrap();
+    let render_state = &mut RenderStates::default() as *mut RenderStates;
+    deref_mut!(render_state).set_shader(Some(deref!(shader)));
+
+    let shader = deref_mut!(shader);
+    shader.set_uniform_texture("u_map_day", &earth_day);
+    shader.set_uniform_texture("u_map_night", &earth_night);
+    shader.set_uniform_vec2("u_resolution", Vector2f::new(width as f32, height as f32));
+
+    let mut shape = RectangleShape::new();
+    shape.set_size(Vector2f::new(width as f32, height as f32));
+
     println!("Listening on {addr}");
 
     for stream in listener.incoming() {
+        let processing_start = std::time::Instant::now();
+
         let Ok(mut stream) = stream else { continue };
 
         let buf_reader = BufReader::new(&mut stream);
@@ -67,7 +97,6 @@ fn main() -> std::io::Result<()> {
 
             let mut lat = None;
             let mut lon = None;
-            let mut width = None;
             while let Some(pair) = query_pairs.next() {
                 match &*pair.0 {
                     "lat" => {
@@ -80,52 +109,40 @@ fn main() -> std::io::Result<()> {
                             lon = Some(val)
                         }
                     }
-                    "width" => {
-                        if let Ok(val) = pair.1.parse::<f32>() {
-                            width = Some(val)
-                        }
-                    }
                     _ => (),
                 }
             }
 
             if let (Some(lat), Some(lon)) = (lat, lon) {
-                let width = width.unwrap_or(800.0);
-                let height = width * 0.5;
-
-                
-
-                println!("Canvas size: {}x{}, (lat,lon): ({lat}, {lon})", width as u32, height as u32);
-                let mut render_texture = RenderTexture::new(width as u32, height as u32).unwrap();
-                println!("Rendering...");
                 render_texture.clear(Color::rgb(0, 0, 0));
-                let mut state = RenderStates::default();
+                shader.set_uniform_float("u_lat", lat * std::f32::consts::PI / 180.0);
+                shader.set_uniform_float("u_lon", lon * std::f32::consts::PI / 180.0);
+                render_texture.draw_with_renderstates(&shape, deref!(render_state));
+                // render_texture.display();
 
-                shader
-                    .set_uniform_vec2("u_resolution", Vector2f::new(width.floor(), height.floor()));
-                shader.set_uniform_float("u_lat", lat * std::f32::consts::PI/180.0);
-                shader.set_uniform_float("u_lon", lon * std::f32::consts::PI/180.0);
-                shader.set_uniform_texture("u_map_day", &earth_day);
-                shader.set_uniform_texture("u_map_night", &earth_night);
-                state.set_shader(Some(&shader));
+                let pixels = render_texture.texture().copy_to_image().unwrap();
+                let pixels = pixels.pixel_data();
 
-                let mut shape = RectangleShape::new();
-                shape.set_size(Vector2f::new(width, height));
-                render_texture.draw_with_renderstates(&shape, &state);
-                render_texture.display();
 
-                
-                println!("Temp saving image...");
-                let img = render_texture.texture().copy_to_image();
-                assert!(img.unwrap().save_to_file(&args.tmp_file), "Failed to save image");
-                println!("Loading it back...");
-                let img = std::fs::read(&args.tmp_file).unwrap();
+                let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Type:image/png\r\n\r\n");
 
-                println!("Sending image...");
-                let _ = stream.write_all(
-                    b"HTTP/1.1 200 OK\r\nContent-Type:image/png\r\n\r\n",
+
+                {
+                    use std::io::BufWriter;
+                    let ref mut w = BufWriter::new(stream);
+
+                    let mut encoder = png::Encoder::new(w, width as u32, height as u32);
+                    encoder.set_color(png::ColorType::Rgba);
+                    encoder.set_depth(png::BitDepth::Eight);
+
+                    let mut writer = encoder.write_header().unwrap();
+                    writer.write_image_data(pixels).unwrap();
+                }
+
+                println!(
+                    "Took {}ms in total to process request for (lat,lon): ({lat}, {lon})",
+                    processing_start.elapsed().as_millis()
                 );
-                let _ = stream.write_all(&img);
             }
         };
     }
