@@ -115,17 +115,20 @@ fn main() -> std::io::Result<()> {
 
             if let (Some(lat), Some(lon)) = (lat, lon) {
                 render_texture.clear(Color::rgb(0, 0, 0));
-                shader.set_uniform_float("u_lat", lat * std::f32::consts::PI / 180.0);
-                shader.set_uniform_float("u_lon", lon * std::f32::consts::PI / 180.0);
+
+                let slat = lat * std::f32::consts::PI / 180.;
+                let slon = lon * std::f32::consts::PI / 180.;
+
+                shader.set_uniform_vec3(
+                    "u_sun_dir",
+                    sfml::graphics::glsl::Vec3::new(f32::cos(slat) * f32::cos(slon), f32::cos(slat) * f32::sin(slon), f32::sin(slat)),
+                );
                 render_texture.draw_with_renderstates(&shape, deref!(render_state));
-                // render_texture.display();
 
                 let pixels = render_texture.texture().copy_to_image().unwrap();
                 let pixels = pixels.pixel_data();
 
-
                 let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Type:image/png\r\n\r\n");
-
 
                 {
                     use std::io::BufWriter;

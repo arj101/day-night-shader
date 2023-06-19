@@ -8,8 +8,7 @@
 #define ASTRONOMICAL_TWILIGHT (90.0 + 12.0) * PI/180.0 
 #define NIGHT (90.0 + 18.0) * PI/180.0
 
-uniform float u_lat;
-uniform float u_lon;
+uniform vec3 u_sun_dir;
 
 uniform vec2 u_resolution;
 
@@ -34,22 +33,12 @@ vec4 drawLine(vec4 inColor, float angle, float lineAngle, float angularWidth) {
 }
 
 void main() {
-    vec2 fragCoordYFlip = gl_FragCoord.xy;
-    // fragCoordYFlip.y = u_resolution.y - fragCoordYFlip.y;
-
-    vec2 texCoord = fragCoordYFlip/u_resolution;
+    vec2 texCoord = gl_FragCoord.xy/u_resolution;
     vec4 mapColorDay = texture2D(u_map_day, texCoord);
     vec4 mapColorNight = texture2D(u_map_night, texCoord);
 
 
-    vec2 sunLngLat = vec2(u_lon, u_lat);
     vec2 currLngLat = reverseEquirectangular(gl_FragCoord.xy);
-
-    vec3 sunPos = vec3(
-        cos(sunLngLat.y) * cos(sunLngLat.x),
-        cos(sunLngLat.y) * sin(sunLngLat.x),
-        sin(sunLngLat.y)
-    );
     
     vec3 currPos = vec3(
         cos(currLngLat.y) * cos(currLngLat.x),
@@ -57,9 +46,8 @@ void main() {
         sin(currLngLat.y)
     );
     
-    float angle = acos(clamp(dot(sunPos, currPos), -1.0, 1.0));
+    float angle = acos(clamp(dot(u_sun_dir, currPos), -1.0, 1.0));
     float brightnessFactor = 1.0 - angle/PI;
-    
     float brightnessCoFactor = 1.0;
     
     if (angle > CIVIL_TWILIGHT) brightnessCoFactor -= 0.3;
