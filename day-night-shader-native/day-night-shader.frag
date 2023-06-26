@@ -27,7 +27,7 @@ vec2 reverseEquirectangular(vec2 pos) {
 
 
 vec4 drawLine(vec4 inColor, float angle, float lineAngle, float angularWidth) {
-    float edge = smoothstep(0., angularWidth,  abs(angle - lineAngle));
+    float edge = smoothstep(0., angularWidth,  abs(angle - angularWidth*0.5 - lineAngle));
 
     return mix(inColor, vec4(1., 1., 1., 1.0), (1. - edge) * 0.12);
 }
@@ -83,8 +83,8 @@ void main() {
         }
     }
     
-    if (angle >= CIVIL_TWILIGHT) gl_FragColor = drawLine(gl_FragColor, angle, CIVIL_TWILIGHT, 0.01);
-    if (angle >= NAUTICAL_TWILIGHT) gl_FragColor = drawLine(gl_FragColor, angle, NAUTICAL_TWILIGHT, 0.01);
-    if (angle >= ASTRONOMICAL_TWILIGHT) gl_FragColor = drawLine(gl_FragColor, angle, ASTRONOMICAL_TWILIGHT, 0.01);
-    if (angle >= NIGHT) gl_FragColor = drawLine(gl_FragColor, angle, NIGHT, 0.01);
+    if (angle >= CIVIL_TWILIGHT - 0.005) gl_FragColor = drawLine(gl_FragColor, angle, CIVIL_TWILIGHT, 0.01);
+    if (angle >= NAUTICAL_TWILIGHT - 0.005) gl_FragColor = drawLine(gl_FragColor, angle, NAUTICAL_TWILIGHT, 0.01);
+    if (angle >= ASTRONOMICAL_TWILIGHT - 0.005) gl_FragColor = drawLine(gl_FragColor, angle, ASTRONOMICAL_TWILIGHT, 0.01);
+    if (angle >= NIGHT - 0.005) gl_FragColor = drawLine(gl_FragColor, angle, NIGHT, 0.01);
 }
