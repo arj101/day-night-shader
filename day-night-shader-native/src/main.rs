@@ -1,34 +1,24 @@
-use futures_channel;
 use sfml::graphics::{
     Color, IntRect, RectangleShape, RenderStates, RenderTarget, RenderTexture, Shader, Texture,
 };
 use sfml::system::Vector2f;
-use std::io::prelude::*;
+
+use hyper::http::{Request, Response, StatusCode};
+use hyper::service::service_fn;
+use hyper::server::conn::Http;
+use hyper::Body;
+
+use tokio::net::TcpListener;
 use tokio::time::Instant;
 
-use std::net::SocketAddr;
-
-use std::io::BufReader;
-
-use axum::{
-    extract::Query,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, post},
-};
-use axum::{http::Request, routing::get_service, Router};
-use clap::Parser;
-use hyper::http::Response;
-use hyper::Body;
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::convert::Infallible;
-use url::Url;
+use std::io::BufWriter;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
-use log::debug;
-use log::error;
-use log::info;
-use log::trace;
-use log::warn;
+use clap::Parser;
+use log::{debug, error, info, trace, warn};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
@@ -162,10 +152,6 @@ fn run_shader(args: Args, mut rx: futures_channel::mpsc::UnboundedReceiver<Rende
     }
 }
 
-use std::collections::HashMap;
-use std::io::BufWriter;
-use std::sync::Arc;
-
 async fn service(
     tx: futures_channel::mpsc::UnboundedSender<RenderRequest>,
     args: Arc<Args>,
@@ -255,9 +241,6 @@ async fn service(
     }
 }
 
-use hyper::service::service_fn;
-use tokio::net::TcpListener;
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
@@ -274,7 +257,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind(addr).await?;
     info!("Listening on http://{}", addr);
 
-    use hyper::server::conn::Http;
 
     let args = Arc::new(args);
 
