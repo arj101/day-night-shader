@@ -27,7 +27,7 @@ vec2 reverseEquirectangular(vec2 pos) {
 
 
 vec4 drawLine(vec4 inColor, float angle, float lineAngle, float angularWidth) {
-    float edge = smoothstep(0., angularWidth,  abs(angle - lineAngle));
+    float edge = smoothstep(0., angularWidth,  abs(angle - angularWidth*0.5 - lineAngle));
 
     return mix(inColor, vec4(1., 1., 1., 1.0), (1. - edge) * 0.12);
 }
