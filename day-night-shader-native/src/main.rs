@@ -53,7 +53,7 @@ struct RenderRequest {
     res_channel: futures_channel::oneshot::Sender<Vec<u8>>,
 }
 
-fn run_shader(args: Args, mut rx: futures_channel::mpsc::UnboundedReceiver<RenderRequest>) {
+fn shader(args: Args, mut rx: futures_channel::mpsc::UnboundedReceiver<RenderRequest>) {
     info!(
         "Using a {}x{}px canvas for rendering",
         args.width as u32,
@@ -105,6 +105,7 @@ fn run_shader(args: Args, mut rx: futures_channel::mpsc::UnboundedReceiver<Rende
 
     let width = args.width;
     let height = args.width / 2;
+
 
     let mut render_texture =
         RenderTexture::new(width, height).expect("Failed to create SFML RenderTexture.");
@@ -250,7 +251,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx, rx) = futures_channel::mpsc::unbounded();
 
     let args_clone = args.clone();
-    tokio::task::spawn_blocking(|| run_shader(args_clone, rx));
+    tokio::task::spawn_blocking(|| shader(args_clone, rx));
 
     let addr = args.addr;
 
