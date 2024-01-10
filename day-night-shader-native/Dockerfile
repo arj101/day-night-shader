@@ -16,6 +16,7 @@ RUN cargo build --release --bin day-night-shader-native
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /day-night-shader
-RUN apt-get update && apt-get install libsfml-dev xvfb -y && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install libsfml-dev xvfb wget iproute2 -y && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /day-night-shader/target/release/day-night-shader-native /usr/local/bin
-ENTRYPOINT ["xvfb-run", "day-night-shader-native"]
+COPY --from=builder /day-night-shader/docker-commands.sh /day-night-shader
+ENTRYPOINT ["sh", "/day-night-shader/docker-commands.sh"]
