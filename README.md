@@ -16,7 +16,7 @@ cargo build --release --bin day-night-shader-native #this will take a while
 ```
 
 \
-Your executable will be located in `[git dowload folder]/target/release/day-night-shader-native`
+Your executable will be located in `/target/release/day-night-shader-native`
 If you wish to install it locally:
 ```bash
 cp /target/release/day-night-shader-native /usr/local/bin
